@@ -45,6 +45,12 @@ namespace nvenc {
       case platf::pix_fmt_e::yuv444p16:
         return NV_ENC_BUFFER_FORMAT_YUV444_10BIT;
 
+      case platf::pix_fmt_e::yuv444p10:
+        return NV_ENC_BUFFER_FORMAT_YUV444_10BIT;
+
+      case platf::pix_fmt_e::yuv444p:
+        return NV_ENC_BUFFER_FORMAT_YUV444;
+
       default:
         return NV_ENC_BUFFER_FORMAT_UNDEFINED;
     }

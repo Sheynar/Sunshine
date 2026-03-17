@@ -528,8 +528,8 @@ namespace video {
   #endif
       AV_PIX_FMT_NV12,
       AV_PIX_FMT_P010,
-      AV_PIX_FMT_NONE,
-      AV_PIX_FMT_NONE,
+      AV_PIX_FMT_YUV444P,
+      AV_PIX_FMT_YUV444P10,
   #ifdef _WIN32
       dxgi_init_avcodec_hardware_input_buffer
   #else
@@ -608,7 +608,7 @@ namespace video {
       {},  // Fallback options
       "h264_nvenc"s,
     },
-    PARALLEL_ENCODING
+    PARALLEL_ENCODING | REF_FRAMES_INVALIDATION | YUV444_SUPPORT | ASYNC_TEARDOWN  // flags
   };
 #endif
 
@@ -1908,6 +1908,14 @@ namespace video {
 
     encode_device_final->apply_colorspace();
 
+	BOOST_LOG(info) << "HEVC YUV444 Debug:";
+	BOOST_LOG(info) << "  Pixel format (sw_fmt): " << av_get_pix_fmt_name(sw_fmt);
+	BOOST_LOG(info) << "  Color range: " << (ctx->color_range == AVCOL_RANGE_JPEG ? "Full (JPEG)" : "Limited (MPEG)");
+	BOOST_LOG(info) << "  Color space: " << av_color_space_name(ctx->colorspace);
+	BOOST_LOG(info) << "  Color primaries: " << av_color_primaries_name(ctx->color_primaries);
+	BOOST_LOG(info) << "  Color transfer: " << av_color_transfer_name(ctx->color_trc);
+	BOOST_LOG(info) << "  Profile: " << ctx->profile;
+
     auto session = std::make_unique<avcodec_encode_session_t>(
       std::move(ctx),
       std::move(encode_device_final),
@@ -2657,16 +2665,19 @@ namespace video {
         encoder.h264[encoder_t::YUV444] = false;
       }
 
-      const config_t generic_hdr_config = {1920, 1080, 60, 6000, 1000, 1, 0, 3, 1, 1, 0};
 
-      // Reset the display since we're switching from SDR to HDR
-      reset_display(disp, encoder.platform_formats->dev_type, output_name, generic_hdr_config);
-      if (!disp) {
-        return false;
-      }
 
-      auto test_hdr_and_yuv444 = [&](auto &flag_map, auto video_format) {
-        auto config = generic_hdr_config;
+      auto test_yuv444 = [&](auto &flag_map, auto video_format) {
+        const config_t sdr_yuv444_config = {1920, 1080, 60, 6000, 1000, 1, 0, 1, 1, 0, 1};
+
+		auto config = sdr_yuv444_config;
+
+	  	// Reset the display
+      	reset_display(disp, encoder.platform_formats->dev_type, output_name, config);
+      	if (!disp) {
+          return;
+      	}
+
         config.videoFormat = video_format;
 
         if (!flag_map[encoder_t::PASSED]) {
@@ -2675,16 +2686,47 @@ namespace video {
 
         auto encoder_codec_name = encoder.codec_from_config(config).name;
 
-        // Test 4:4:4 HDR first. If 4:4:4 is supported, 4:2:0 should also be supported.
+        // Test 4:4:4 SDR first
+        config.chromaSamplingType = 1;
+        if ((encoder.flags & YUV444_SUPPORT) &&
+            disp->is_codec_supported(encoder_codec_name, config) &&
+            validate_config(disp, encoder, config) >= 0) {
+          flag_map[encoder_t::YUV444] = true;
+          return;
+        } else {
+          flag_map[encoder_t::YUV444] = false;
+        }
+	  };
+
+	  auto test_hdr_yuv444 = [&](auto &flag_map, auto video_format) {
+
+		const config_t generic_hdr_config = {1920, 1080, 60, 6000, 1000, 1, 0, 3, 1, 1, 0};
+
+        auto config = generic_hdr_config;
+
+		// Reset the display
+      	reset_display(disp, encoder.platform_formats->dev_type, output_name, config);
+      	if (!disp) {
+          return;
+      	}
+
+        config.videoFormat = video_format;
+
+        if (!flag_map[encoder_t::PASSED]) {
+          return;
+        }
+
+        auto encoder_codec_name = encoder.codec_from_config(config).name;
+
+        // Test 4:4:4 HDR first.
         config.chromaSamplingType = 1;
         if ((encoder.flags & YUV444_SUPPORT) &&
             disp->is_codec_supported(encoder_codec_name, config) &&
             validate_config(disp, encoder, config) >= 0) {
           flag_map[encoder_t::DYNAMIC_RANGE] = true;
-          flag_map[encoder_t::YUV444] = true;
           return;
         } else {
-          flag_map[encoder_t::YUV444] = false;
+          flag_map[encoder_t::DYNAMIC_RANGE] = false;
         }
 
         // Test 4:2:0 HDR
@@ -2700,8 +2742,10 @@ namespace video {
       // HDR is not supported with H.264. Don't bother even trying it.
       encoder.h264[encoder_t::DYNAMIC_RANGE] = false;
 
-      test_hdr_and_yuv444(encoder.hevc, 1);
-      test_hdr_and_yuv444(encoder.av1, 2);
+	  test_yuv444(encoder.hevc, 1);
+      test_hdr_yuv444(encoder.hevc, 1);
+	  test_yuv444(encoder.av1, 2);
+	  test_hdr_yuv444(encoder.av1, 2);
     }
 
     encoder.h264[encoder_t::VUI_PARAMETERS] = encoder.h264[encoder_t::VUI_PARAMETERS] && !config::sunshine.flags[config::flag::FORCE_VIDEO_HEADER_REPLACE];
@@ -3059,6 +3103,10 @@ namespace video {
         return platf::pix_fmt_e::nv12;
       case AV_PIX_FMT_P010:
         return platf::pix_fmt_e::p010;
+      case AV_PIX_FMT_YUV444P:
+        return platf::pix_fmt_e::yuv444p;
+      case AV_PIX_FMT_YUV444P10:
+        return platf::pix_fmt_e::yuv444p10;
       default:
         return platf::pix_fmt_e::unknown;
     }

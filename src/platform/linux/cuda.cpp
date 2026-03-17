@@ -120,10 +120,10 @@ namespace cuda {
       this->frame = frame;
 
       auto hwframe_ctx = (AVHWFramesContext *) hw_frames_ctx->data;
-      if (hwframe_ctx->sw_format != AV_PIX_FMT_NV12) {
-        BOOST_LOG(error) << "cuda::cuda_t doesn't support any format other than AV_PIX_FMT_NV12"sv;
-        return -1;
-      }
+      //if (hwframe_ctx->sw_format != AV_PIX_FMT_NV12) {
+      //  BOOST_LOG(error) << "cuda::cuda_t doesn't support any format other than AV_PIX_FMT_NV12"sv;
+      //  return -1;
+      //}
 
       if (!frame->buf[0]) {
         if (av_hwframe_get_buffer(hw_frames_ctx, frame, 0)) {
@@ -344,6 +344,8 @@ namespace cuda {
 
       auto hw_frames_ctx = (AVHWFramesContext *) hw_frames_ctx_buf->data;
       sw_format = hw_frames_ctx->sw_format;
+
+	  BOOST_LOG(info) << "--sw_format" << av_get_pix_fmt_name(sw_format);
 
       auto nv12_opt = egl::create_target(frame->width, frame->height, sw_format);
       if (!nv12_opt) {
