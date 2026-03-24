@@ -20,7 +20,7 @@ layout(location = 0) out float color;
 void main()
 {
 	vec3 rgb = texture(image, tex).rgb;
-	float y = dot(color_vec_y.xyz, rgb) + color_vec_y.w;
+	float v = dot(color_vec_v.xyz, rgb) + color_vec_v.w;
 
-	color = y * range_y.x + range_y.y;
+	color = v * range_y.x + range_y.y;
 }

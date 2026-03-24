@@ -183,8 +183,10 @@ namespace nvenc {
       return buffer_format == NV_ENC_BUFFER_FORMAT_YUV420_10BIT || buffer_format == NV_ENC_BUFFER_FORMAT_YUV444_10BIT;
     };
 
+    BOOST_LOG(info) << "buffer format is " << buffer_format;
+
     auto buffer_is_yuv444 = [&]() {
-      return buffer_format == NV_ENC_BUFFER_FORMAT_AYUV || buffer_format == NV_ENC_BUFFER_FORMAT_YUV444_10BIT;
+      return buffer_format == NV_ENC_BUFFER_FORMAT_AYUV || buffer_format == NV_ENC_BUFFER_FORMAT_YUV444 || buffer_format == NV_ENC_BUFFER_FORMAT_YUV444_10BIT;
     };
 
     {

@@ -1908,7 +1908,7 @@ namespace video {
 
     encode_device_final->apply_colorspace();
 
-	BOOST_LOG(info) << "HEVC YUV444 Debug:";
+	BOOST_LOG(info) << "Debug:";
 	BOOST_LOG(info) << "  Pixel format (sw_fmt): " << av_get_pix_fmt_name(sw_fmt);
 	BOOST_LOG(info) << "  Color range: " << (ctx->color_range == AVCOL_RANGE_JPEG ? "Full (JPEG)" : "Limited (MPEG)");
 	BOOST_LOG(info) << "  Color space: " << av_color_space_name(ctx->colorspace);
