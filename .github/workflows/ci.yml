@@ -7,7 +7,7 @@ on:
   push:
     branches:
       - master
-      - "yuv-444/x11-yuv-444"
+      - "build-test/x11-wayland-yuv-444-test"
   workflow_dispatch:
 
 concurrency:
