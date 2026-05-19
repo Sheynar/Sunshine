@@ -8,6 +8,11 @@ permissions: {}
 
 on:
   pull_request:
+  push:
+    branches:
+      - master
+      - "linux-yuv-444-test-build/x11-wayland-yuv444-cuda"
+  workflow_dispatch:
 
 concurrency:
   group: "${{ github.workflow }}-${{ github.ref }}"
