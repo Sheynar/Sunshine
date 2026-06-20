@@ -8,6 +8,11 @@ permissions: {}
 
 on:
   pull_request:
+  push:
+    branches:
+      - master
+      - "hotfix/test-build-cuda-gl-yuv444"
+  workflow_dispatch:
 
 concurrency:
   group: "${{ github.workflow }}-${{ github.ref }}"
