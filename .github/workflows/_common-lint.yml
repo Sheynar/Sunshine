@@ -8,6 +8,11 @@ permissions: {}
 
 on:
   pull_request:
+  push:
+    branches:
+      - master
+      - "linux/test-build-cuda-gl-hdr"
+  workflow_dispatch:
 
 concurrency:
   group: "${{ github.workflow }}-${{ github.ref }}"
